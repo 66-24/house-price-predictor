@@ -40,3 +40,13 @@ dist/
 # Ignore all .pkl files (models, preprocessors, etc.)
 *.pkl
 
+
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
