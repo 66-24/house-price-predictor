@@ -9,6 +9,8 @@
   packages = with pkgs; [
     (python311.withPackages (ps:
       with ps; [
+        # used by make.py
+        typer
         # 📊 Data processing
         pandas # Tabular data manipulation
         numpy # Numerical arrays, math operations
@@ -23,6 +25,9 @@
 
         # 📦 Experiment Tracking
         mlflow # Model tracking, packaging, metrics/logs
+        joblib # Model persistence and parallel computing
+        pip
+
 
         # 🧪 Testing
         pytest # Unit testing, test discovery
@@ -38,10 +43,10 @@
         # ⚡ Serving (optional)
         fastapi # REST API for model serving
         uvicorn # ASGI server for FastAPI apps
+
       ]))
     jupyter # Optional: CLI for Jupyter
     gum # Optional: CLI tools (e.g., for TUI prompts)
-    
   ];
 
   # https://devenv.sh/languages/

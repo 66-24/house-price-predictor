@@ -183,5 +183,13 @@ We welcome contributions, issues, and suggestions to make this project even bett
 
 ---
 
+### Using Devenv
+
+#### List all installed python packages
+
+```bash
+pip list
+```
+
 Happy Learning!  
 — Team **School of DevOps**
