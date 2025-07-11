@@ -62,7 +62,7 @@ def cleanup():
     run(cmd)
 
 @app.command(name="run-container")
-def run_container(port: int = PORT, tag: str = TAG):
+def run_container(port: int = PORT, tag: str = "latest"):
     """Run container"""
     run(f"docker run --rm -p {port}:8000 {IMAGE_NAME}:{tag}")
 
@@ -75,7 +75,7 @@ def test(port: int = PORT):
 @app.command()
 def stop_containers():
     """Stop running containers based on the image"""
-    cmd = f"docker ps --filter ancestor={IMAGE_NAME}:{TAG} -q"
+    cmd = f"docker ps --filter ancestor={IMAGE_NAME} -q"
     print(f"$ {cmd}")
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     container_ids = [cid for cid in result.stdout.strip().split('\n') if cid]
