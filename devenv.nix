@@ -41,6 +41,7 @@
       ]))
     jupyter # Optional: CLI for Jupyter
     gum # Optional: CLI tools (e.g., for TUI prompts)
+    
   ];
 
   # https://devenv.sh/languages/

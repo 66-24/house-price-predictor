@@ -1,8 +1,19 @@
-# src/data/processor.py
+#!/usr/bin/env python3
+
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import logging
+
+# Run from the project root dir.
+
+
+
+if not Path.cwd().name.lower().endswith('house-price-predictor'):
+    print(f"{Path.cwd()}")
+    print("Please run from project root: house-price-predictor")
+    exit(1)
 
 # Set up logging
 logging.basicConfig(
