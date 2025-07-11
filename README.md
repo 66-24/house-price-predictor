@@ -133,19 +133,17 @@ python src/models/train_model.py   --config configs/model_config.yaml   --data d
 
 ---
 
+## Building FastAPI and Streamlit
 
-## Building FastAPI and Streamlit 
+The code for both the apps are available in `src/api` and `streamlit_app` already. To build and launch these apps
 
-The code for both the apps are available in `src/api` and `streamlit_app` already. To build and launch these apps 
+- Add a  `Dockerfile` in the root of the source code for building FastAPI  
+- Add `streamlit_app/Dockerfile` to package and build the Streamlit app  
+- Add `docker-compose.yaml` in the root path to launch both these apps. be sure to provide `API_URL=http://fastapi:8000` in the streamlit app's environment.
 
-  * Add a  `Dockerfile` in the root of the source code for building FastAPI  
-  * Add `streamlit_app/Dockerfile` to package and build the Streamlit app  
-  * Add `docker-compose.yaml` in the root path to launch both these apps. be sure to provide `API_URL=http://fastapi:8000` in the streamlit app's environment. 
+Once you have launched both the apps, you should be able to access streamlit web ui and make predictions.
 
-
-Once you have launched both the apps, you should be able to access streamlit web ui and make predictions. 
-
-You could also test predictions with FastAPI directly using 
+You could also test predictions with FastAPI directly using
 
 ```
 curl -X POST "http://localhost:8000/predict" \
@@ -161,8 +159,98 @@ curl -X POST "http://localhost:8000/predict" \
 
 ```
 
-Be sure to replace `http://localhost:8000/predict` with actual endpoint based on where its running. 
+Be sure to replace `http://localhost:8000/predict` with actual endpoint based on where its running.
 
+## Errors with Joblib
+
+The version of the `joblib` library in the Docker files should match the version used to create the model `pkl` files.
+
+Run `pip list` to get a list of all the installed packages and match versions against requirements.txt
+
+```bash
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:318: UserWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.6.1 when using version 1.2.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+Traceback (most recent call last):
+  File "/app/inference.py", line 11, in <module>
+    model = joblib.load(MODEL_PATH)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 658, in load
+    obj = _unpickle(fobj, filename, mmap_mode)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 577, in _unpickle
+    obj = unpickler.load()
+          ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/pickle.py", line 1213, in load
+    dispatch[key[0]](self)
+  File "/usr/local/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 415, in load_build
+    self.stack.append(array_wrapper.read(self))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 252, in read
+    array = self.read_array(unpickler)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/joblib/numpy_pickle.py", line 152, in read_array
+    array = pickle.load(unpickler.file_handle)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'numpy._core'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/bin/uvicorn", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/click/core.py", line 1442, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/click/core.py", line 1363, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/click/core.py", line 1226, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/click/core.py", line 794, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/main.py", line 410, in main
+    run(
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/main.py", line 578, in run
+    server.run()
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/server.py", line 61, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/server.py", line 68, in serve
+    config.load()
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/config.py", line 473, in load
+    self.loaded_app = import_from_string(self.app)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/importer.py", line 21, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/app/main.py", line 3, in <module>
+    from inference import predict_price, batch_predict
+  File "/app/inference.py", line 14, in <module>
+    raise RuntimeError(f"Error loading model or preprocessor: {str(e)}")
+RuntimeError: Error loading model or preprocessor: No module named 'numpy._core'
+```
 
 ## 🧠 Learn More About MLOps
 
