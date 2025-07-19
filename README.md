@@ -143,9 +143,11 @@ The code for both the apps are available in `src/api` and `streamlit_app` alread
 
 Once you have launched both the apps, you should be able to access streamlit web ui and make predictions.
 
-You could also test predictions with FastAPI directly using
+You could also test predictions with FastAPI directly using `./make.py test`.  
+[make.py](make.py) is used to make it easier to run Docker commands to interact with House Price Predictor FastAPI app.
+> `Makefile` uses tabs (not spaces) and I found this made it harder to use. My VSCode setup uses spaces instead of tabs!
 
-```
+```bash
 curl -X POST "http://localhost:8000/predict" \
 -H "Content-Type: application/json" \
 -d '{
