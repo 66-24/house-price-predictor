@@ -27,6 +27,12 @@ For example, if your image is `celestialseeker/house-price-predictor-ui:d60a432`
 **Notes:**
 *   The `-P` flag (or `-p` with no specified host port) automatically maps a random host port to the container's exposed port.
 *   To view the application logs, use `docker logs <container_id_or_name>`.
+*   To find the random port mapped by `-P`, use `docker ps`. Look under the `PORTS` column. For example:
+    ```
+    CONTAINER ID   IMAGE                                            COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+    a1b2c3d4e5f6   celestialseeker/house-price-predictor-ui:d60a432 "streamlit run app.py"   2 seconds ago   Up 1 second    0.0.0.0:32768->8501/tcp, :::32768->8501/tcp   vigilant_hoover
+    ```
+    In this example, `32768` is the random host port mapped to the container's port 8501.
 
 
   
