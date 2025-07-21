@@ -3,13 +3,18 @@ import typer
 import subprocess
 from datetime import datetime
 import time
+import os
 
 app = typer.Typer()
 
-IMAGE_NAME = "dataflow/house-price-predictor"
-# TODO: Extract from pom.xml
-TAG = "1.0.0-SNAPSHOT"
+# Get DOCKER_USERID from environment
+docker_userid = os.getenv("DOCKER_USERID")
+if not docker_userid:
+    print("Error: DOCKER_USERID environment variable not set.")
+    raise typer.Exit(code=1)
 
+IMAGE_NAME = f"{docker_userid}/house-price-predictor/house-price-predictor-service"
+VERSION = "1.0.0"
 PORT = 9999
 
 def run(cmd: str, capture_output: bool = False) -> str | None:
@@ -26,26 +31,53 @@ def run(cmd: str, capture_output: bool = False) -> str | None:
 
 
 @app.command()
-def build(tag: str = TAG, team_name: str = "devops"):
-    """Build Docker image with version, SHA, team tag, and latest"""
+def build(
+    version: str = VERSION,
+    team: str = "devops",
+    author: str = typer.Option(None, help="Author of the image. Defaults to git user.name."),
+    push: bool = typer.Option(False, "--push", help="Push the image to the repository.")
+):
+    """Build Docker image with all required ARGS and optionally push to a repository."""
+    if author is None:
+        try:
+            author = run("git config --get user.name", capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            author = "Unknown"
+
     git_sha = run("git rev-parse --short HEAD", capture_output=True)
     build_date = datetime.utcnow().isoformat() + "Z"
     source_date_epoch = str(int(time.time()))
 
-    tags = [
-        f"{IMAGE_NAME}:v{tag}",           # e.g. v1.0.0
-        f"{IMAGE_NAME}:{git_sha}",        # e.g. ae91f3a
-        f"{IMAGE_NAME}:latest",
-        f"{IMAGE_NAME}:{team_name}"       # e.g. devops
-    ]
+    build_args = {
+        "SOURCE_DATE_EPOCH": source_date_epoch,
+        "BUILD_DATE": build_date,
+        "AUTHOR": author,
+        "VERSION": version,
+        "GIT_SHA_SHORT": git_sha,
+        "TEAM": team,
+        "IMAGE_NAME": IMAGE_NAME,
+    }
 
-    tag_args = ' '.join(f"-t {t}" for t in tags)
-    run(
-        f"docker build {tag_args} "
-        f"--build-arg TEAM_NAME={team_name} "
-        f"--build-arg BUILD_DATE={build_date} "
-        f"--build-arg SOURCE_DATE_EPOCH={source_date_epoch} ."
-    )
+    build_args_str = " ".join([f'--build-arg {k}="{v}"' for k, v in build_args.items()])
+
+    tags = [
+        f"{IMAGE_NAME}:v{version}",
+        f"{IMAGE_NAME}:{git_sha}",
+        f"{IMAGE_NAME}:latest",
+        f"{IMAGE_NAME}:{team}"
+    ]
+    tag_args = " ".join([f"-t {t}" for t in tags])
+
+    build_cmd = f"docker build {tag_args} {build_args_str} ."
+    print(f"Running build command:\n{build_cmd}")
+    run(build_cmd)
+
+    if push:
+        print("\nPushing images...")
+        for t in tags:
+            run(f"docker push {t}")
+        print("Images pushed successfully.")
+
 
 @app.command()
 def delete():
@@ -57,7 +89,7 @@ def cleanup():
     """Delete all but latest images"""
     cmd = (
         f"docker images --format '{{{{.Repository}}}} {{{{.Tag}}}} {{{{.ID}}}}' | "
-        f"grep '^{IMAGE_NAME} ' | grep -v ' latest' | awk '{{print $$3}}' | xargs -r docker rmi"
+        f"grep '^{IMAGE_NAME} ' | grep -v ' latest' | awk '{{print $3}}' | xargs -r docker rmi"
     )
     run(cmd)
 

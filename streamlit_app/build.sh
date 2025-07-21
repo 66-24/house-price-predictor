@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 #Builds the Docker image that provides a nice UI to use the house price predictor service
-DOCKER_USERID='celestialseeker'
+
 GIT_SHA_SHORT=$(git rev-parse --short=7 HEAD)
 VERSION=v1
 TEAM=devops
-IMAGE=${DOCKER_USERID}/house-price-predictor-ui
+#Both service and ui images will now be under house-price-predictor
+IMAGE=${DOCKER_USERID}/house-price-predictor/house-price-predictor-ui
 BUILD_DATE=$(date -Iseconds)
 SOURCE_DATE_EPOCH=$(date +%s)
 

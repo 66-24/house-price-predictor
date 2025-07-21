@@ -1,10 +1,21 @@
+# Creates the house-price-predictor-service image that wraps the model using FastAPI
 FROM python:3.11-slim
 # dataflow/house-price-predictor                   v1                 efcd9bcf0e95   45 years ago         815MB
-# SOURCE_DATE_EPOCH fixes this
+# Created shows `45 years ago`;  SOURCE_DATE_EPOCH fixes this
 ARG SOURCE_DATE_EPOCH
 ARG BUILD_DATE
-LABEL org.opencontainers.image.created=$BUILD_DATE
+ARG AUTHOR
+ARG VERSION
+ARG GIT_SHA_SHORT
+ARG TEAM
+ARG IMAGE_NAME
 
+LABEL org.opencontainers.image.title=$IMAGE_NAME \
+      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.revision=$GIT_SHA_SHORT \
+      org.opencontainers.image.authors=$AUTHOR \
+      org.opencontainers.image.created=$BUILD_DATE \
+      org.opencontainers.image.team=$TEAM
 
 WORKDIR /app
 
