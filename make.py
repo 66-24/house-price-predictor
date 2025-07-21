@@ -73,10 +73,34 @@ def build(
     run(build_cmd)
 
     if push:
-        print("\nPushing images...")
-        for t in tags:
-            run(f"docker push {t}")
+        # After a successful build, call the push command
+        push()
+
+
+@app.command()
+def push():
+    """
+    Push the Docker image with all its tags to the repository.
+    This command uses the more efficient `--all-tags` flag.
+    """
+    print("\nLogging into Docker Hub...")
+    try:
+        run("docker login")
+    except subprocess.CalledProcessError:
+        print("Docker login failed. Please double check $DOCKER_TOKEN is setup and valid.")
+        raise typer.Exit(code=1)
+
+    print(f"\nPushing all tags for {IMAGE_NAME}...")
+    try:
+        run(f"docker push --all-tags {IMAGE_NAME}")
         print("Images pushed successfully.")
+    except subprocess.CalledProcessError:
+        print("\nDocker push failed.")
+        print("Please check the following:")
+        print(f"1. The image '{IMAGE_NAME}' exists locally (you can check with 'docker images').")
+        print(f"2. The repository '{IMAGE_NAME}' exists on Docker Hub.")
+        print("3. You have the necessary permissions to push to this repository.")
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -123,16 +147,54 @@ def stop_containers():
 @app.command()
 def list():
     """Lists versions of the image with tags and build time"""
-    cmd = (
-        f"docker images --format '{{{{.Repository}}}}:{{{{.Tag}}}} {{{{.ID}}}}' | "
-        f"grep '^{IMAGE_NAME}:' | sort | uniq | "
-        "awk '{tags[$2] = tags[$2] \" \" $1} "
-        "END {for (id in tags) print id, tags[id]}' | "
-        "while read id tags; do "
-        f"created=$(docker inspect --format='{{{{.Created}}}}' $id); "
-        "printf \"%s\\t%s\\t%s\\n\" \"$id\" \"$tags\" \"$created\"; "
-        "done | column -t -s $'\\t'"
-    )
+    # `r""" make the python string raw. So \n is preserved. Else will get expanded to a newline resulting in
+    #     printf "%s    %s
+    # ", id, tags[id];
+    # when it should be printf "%s\t%s\n", id, tags[id];
+
+    # | $1 (repo:tag)                                                                | $2 (id)      |
+    # | ---------------------------------------------------------------------------- | ------------ |
+    # | celestialseeker/house-price-predictor/house-price-predictor-service:affb243  | 47135ea4c4e4 |
+    # | celestialseeker/house-price-predictor/house-price-predictor-service:devops   | 47135ea4c4e4 |
+    # | celestialseeker/house-price-predictor/house-price-predictor-service:latest   | 47135ea4c4e4 |
+    # | celestialseeker/house-price-predictor/house-price-predictor-service:v1.0.0   | 47135ea4c4e4 |
+    #     Becomes
+    # 47135ea4c4e4    affb243,devops,latest,v1.0.0
+
+
+
+    awk_script = r"""
+        {
+            # $1 is "repo:tag", $2 is "id"
+            # 1. Split "repo:tag" into array 'a' using ":" as the delimiter.
+            split($1, a, ":");
+            
+            # 2. Use the image ID ($2) as the key for our 'tags' array.
+            #    Append the new tag (a[2]) to the existing list.
+            #    The ternary operator adds a comma *only if* a tag already exists.
+            tags[$2] = tags[$2] (tags[$2] ? "," : "") a[2];
+        }
+        END {
+            # 3. After processing all lines, loop through the 'tags' array
+            #    and print the final ID and the concatenated tag list.
+            for (id in tags) {
+                printf "%s\t%s\n", id, tags[id];
+            }
+        }
+        """
+
+    cmd = f"""
+            docker images --format '{{{{.Repository}}}}:{{{{.Tag}}}} {{{{.ID}}}}' \
+                | grep '^{IMAGE_NAME}:' \
+                | sort -u \
+                | awk '{awk_script}' \
+                | while read id tags; do
+                      created=$(docker inspect --format='{{{{.Created}}}}' "$id");
+                      printf "%s\t%s\t%s\t%s\n" "$(echo "$id" | cut -c1-12)" "{IMAGE_NAME}" "$tags" "$created";
+                  done \
+                | column -t -s $'\\t'
+            """
+
     run(cmd)
 
 
