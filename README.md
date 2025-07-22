@@ -163,6 +163,22 @@ If you encounter persistent issues with Docker reusing old layers or unexpected 
 
 ---
 
+## Docker Compose Notes
+
+Here are some important notes regarding the `docker-compose.yaml` configuration:
+
+-   **Environment Variable Overrides:** Docker Compose uses `.env` files by default for environment variable overrides. Shell variables will take precedence over those defined in `.env` files.
+    -   To specify a different environment file, use: `docker compose --env-file .env_dev up`
+
+-   **Viewing Substituted Configuration:** To see the Docker Compose file after all variable substitutions have been applied, you can use:
+    ```bash
+    docker compose config
+    ```
+
+-   **Build Section in Production:** The `build` section in `docker-compose.yaml` is primarily for local development. It can cause issues with image naming if not handled carefully, as it might build images with invalid names locally (e.g., `${DOCKER_USER_ID}:${SERVICE_VERSION}`). For production deployments, it's generally recommended to remove the `build` section from your compose file and instead use pre-built images from a registry. For this reason, it's a good practice to construct the full image URL (including the registry and repository) directly within your `.env_xxxx` files for different environments.
+
+---
+
 ## Building FastAPI and Streamlit
 
 🐉💣 **Important Note on Docker Compose and Image Layers** 💣🐉
