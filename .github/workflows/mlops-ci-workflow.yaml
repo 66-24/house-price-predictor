@@ -11,6 +11,19 @@ jobs:
   workflow:
     runs-on: ubuntu-latest
     name: Build and Test
+    # Define MLFlow as a service container. Actions will manage its lifecycle,
+    # ensuring it's running and networked before the steps need it.
+    services:
+      mlflow:
+        image: ghcr.io/mlflow/mlflow:latest
+        ports:
+          - "5555:5000"
+        command: > 
+          mlflow server 
+            --host 0.0.0.0 
+            --backend-store-uri sqlite:///mlflow.db
+            --default-artifact-root /tmp/mlruns
+
     steps:
       # https://github.com/marketplace/actions/checkout
       - name: Checkout Repository
@@ -44,15 +57,6 @@ jobs:
             --output data/processed/featured_house_data2.csv \
             --preprocessor models/preprocessor.pkl
 
-      - name: Start MLFlow
-        run: | 
-          docker pull ghcr.io/mlflow/mlflow:latest 
-          docker run -d -p 5555:5000 --name mlflow-server ghcr.io/mlflow/mlflow:latest \
-            mlflow server \
-                  --host 0.0.0.0 \
-                  --backend-store-uri sqlite:///mlflow.db \
-                  --default-artifact-root /tmp/mlruns
-
       - name: Model Training
         run: |
           python src/models/train_model.py \  
@@ -60,12 +64,6 @@ jobs:
           --data data/processed/featured_house_data2.csv \
           --models-dir models \
           --mlflow-tracking-uri http://localhost:5555
-
-      - name: Stop MLFlow
-        run: |
-          docker stop mlflow-server
-          docker rm mlflow-server
-          docker rmi ghcr.io/mlflow/mlflow:latest
 
 
             
