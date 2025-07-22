@@ -182,9 +182,39 @@ Here are some important notes regarding the `docker-compose.yaml` configuration:
 ## Building FastAPI and Streamlit
 
 🐉💣 **Important Note on Docker Compose and Image Layers** 💣🐉
-When using `docker compose build` or `docker compose up --build`, Docker Compose might sometimes reuse layers from previously built images if the image names are similar, even if the tags are different. This can lead to unexpected behavior or outdated dependencies in your services.
 
-To mitigate this, we've adopted unique image names for each service (`house-price-predictor-service` and `house-price-predictor-ui`). If you encounter issues with stale layers, consider using `docker compose build --no-cache` or `docker system prune -a` (use with caution as this removes all unused Docker data) to ensure a clean build.
+**What NOT to do:** Initially, this project attempted to use a single base image name (e.g., `[your-docker-id]/house-price-predictor`) and differentiate services solely by tags (e.g., `house-price-predictor:service-latest` and `house-price-predictor:ui-latest`).
+
+**What happens if you do:** Docker's caching mechanism can get confused when multiple services share the same base image name, even with different tags. This often leads to Docker reusing incorrect layers, resulting in both services running the *same* application (e.g., both the backend and UI containers might end up running the Streamlit frontend).
+
+Here's an example of what you might see in your Docker Compose logs if this issue occurs, where both `house-price-predictor-service-1` and `house-price-predictor-ui-1` are running the Streamlit UI:
+
+```
+[+] Running 4/4
+ ✔ house-price-predictor-ui                                         Built                                                                                                                                                                                                                                                                      0.0s
+ ✔ house-price-predictor-service                                    Built                                                                                                                                                                                                                                                                      0.0s
+ ✔ Container house-price-predictor-house-price-predictor-service-1  Recreated                                                                                                                                                                                                                                                                  0.0s
+ ✔ Container house-price-predictor-house-price-predictor-ui-1       Recreated                                                                                                                                                                                                                                                                  0.0s
+Attaching to house-price-predictor-service-1, house-price-predictor-ui-1
+house-price-predictor-service-1  | 
+house-price-predictor-service-1  | Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
+house-price-predictor-service-1  | 
+house-price-predictor-service-1  | 
+house-price-predictor-service-1  |   You can now view your Streamlit app in your browser.
+house-price-predictor-service-1  | 
+house-price-predictor-service-1  |   URL: http://0.0.0.0:8501
+house-price-predictor-service-1  | 
+house-price-predictor-ui-1       | 
+house-price-predictor-ui-1       | Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
+house-price-predictor-ui-1       | 
+house-price-predictor-ui-1       | 
+house-price-predictor-ui-1       |   You can now view your Streamlit app in your browser.
+house-price-predictor-ui-1       | 
+house-price-predictor-ui-1       |   URL: http://0.0.0.0:8501
+house-price-predictor-ui-1       |
+```
+
+**To mitigate this**, we've adopted unique image names for each service (`house-price-predictor-service` and `house-price-predictor-ui`). If you encounter issues with stale layers, consider using `docker compose build --no-cache` or `docker system prune -a` (use with caution as this removes all unused Docker data) to ensure a clean build.
 
 The code for both the apps are available in `src/api` and `streamlit_app` already. To build and launch these apps
 
