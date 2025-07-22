@@ -133,6 +133,21 @@ python src/models/train_model.py   --config configs/model_config.yaml   --data d
 
 ---
 
+### 🐳 Docker Repository Convention
+
+To keep our containerized applications organized, this project uses a single Docker Hub repository with a specific tagging convention to differentiate between services.
+
+-   **Single Repository:** All images are pushed to a single repository:
+    `[your-docker-id]/house-price-predictor`
+
+-   **Tagging Strategy:** We use tags to identify the service within the repository.
+    -   The FastAPI backend service is tagged with a `service-` prefix (e.g., `service-latest`, `service-v1.0.0`).
+    -   The Streamlit frontend would be tagged with a `ui-` prefix (e.g., `ui-latest`).
+
+This approach avoids the need for multiple repositories and keeps all related project artifacts neatly grouped together.
+
+---
+
 ## Building FastAPI and Streamlit
 
 The code for both the apps are available in `src/api` and `streamlit_app` already. To build and launch these apps

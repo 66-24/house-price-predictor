@@ -13,7 +13,7 @@ if not docker_userid:
     print("Error: DOCKER_USERID environment variable not set.")
     raise typer.Exit(code=1)
 
-IMAGE_NAME = f"{docker_userid}/house-price-predictor/house-price-predictor-service"
+IMAGE_NAME = f"{docker_userid}/house-price-predictor"
 VERSION = "1.0.0"
 PORT = 9999
 
@@ -35,7 +35,7 @@ def build(
     version: str = VERSION,
     team: str = "devops",
     author: str = typer.Option(None, help="Author of the image. Defaults to git user.name."),
-    push: bool = typer.Option(False, "--push", help="Push the image to the repository.")
+    push_flag: bool = typer.Option(False, "--push", help="Push the image to the repository after build.")
 ):
     """Build Docker image with all required ARGS and optionally push to a repository."""
     if author is None:
@@ -61,10 +61,10 @@ def build(
     build_args_str = " ".join([f'--build-arg {k}="{v}"' for k, v in build_args.items()])
 
     tags = [
-        f"{IMAGE_NAME}:v{version}",
-        f"{IMAGE_NAME}:{git_sha}",
-        f"{IMAGE_NAME}:latest",
-        f"{IMAGE_NAME}:{team}"
+        f"{IMAGE_NAME}:service-v{version}",
+        f"{IMAGE_NAME}:service-{git_sha}",
+        f"{IMAGE_NAME}:service-latest",
+        f"{IMAGE_NAME}:service-{team}"
     ]
     tag_args = " ".join([f"-t {t}" for t in tags])
 
@@ -72,9 +72,10 @@ def build(
     print(f"Running build command:\n{build_cmd}")
     run(build_cmd)
 
-    if push:
+    if push_flag:
         # After a successful build, call the push command
         push()
+
 
 
 @app.command()
@@ -113,12 +114,12 @@ def cleanup():
     """Delete all but latest images"""
     cmd = (
         f"docker images --format '{{{{.Repository}}}} {{{{.Tag}}}} {{{{.ID}}}}' | "
-        f"grep '^{IMAGE_NAME} ' | grep -v ' latest' | awk '{{print $3}}' | xargs -r docker rmi"
+        f"grep '^{IMAGE_NAME} ' | grep -v ' service-latest' | awk '{{print $3}}' | xargs -r docker rmi"
     )
     run(cmd)
 
 @app.command(name="run-container")
-def run_container(port: int = PORT, tag: str = "latest"):
+def run_container(port: int = PORT, tag: str = "service-latest"):
     """Run container"""
     run(f"docker run --rm -p {port}:8000 {IMAGE_NAME}:{tag}")
 
