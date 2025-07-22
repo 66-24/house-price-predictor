@@ -31,6 +31,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Validate Python Dependencies
+        run: | 
+          pip list | grep scikit-learn
+          pip freeze | grep -f requirements.txt
+          pip check
       
       # MLOps Specific steps
       - name: Data Validation
