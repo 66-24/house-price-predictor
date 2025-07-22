@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import argparse
 
 import pandas as pd
 import numpy as np
@@ -91,8 +91,22 @@ def process_data(input_file, output_file):
     return df_cleaned
 
 if __name__ == "__main__":
-    # Example usage
+    parser = argparse.ArgumentParser(
+        description="Clean house-price data."
+    )
+    parser.add_argument(
+        "-i", "--input-file",
+        default="data/raw/house_data.csv",
+        help="Path to raw CSV"
+    )
+    parser.add_argument(
+        "-o", "--output-file",
+        default="data/processed/cleaned_house_data.csv",
+        help="Path to write cleaned CSV"
+    )
+    args = parser.parse_args()
+
     process_data(
-        input_file="data/raw/house_data.csv", 
-        output_file="data/processed/cleaned_house_data.csv"
+        input_file=args.input_file,
+        output_file=args.output_file
     )
