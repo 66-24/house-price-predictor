@@ -38,7 +38,8 @@ jobs:
 
       - name: Feature Engineering
         run: |
-          python src/features/engineering.py \
+          
+          python src/features/engineer.py \
             --input data/processed/cleaned_house_data2.csv \
             --output data/processed/featured_house_data2.csv \
             --preprocessor models/preprocessor.pkl
