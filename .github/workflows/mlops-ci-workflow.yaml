@@ -8,7 +8,7 @@ on:
     branches:
       - main
 jobs:
-  workflow:
+  e2e-mlops-workflow:
     runs-on: ubuntu-latest
     name: Build and Test
     # Define MLFlow as a service container. Actions will manage its lifecycle,
@@ -103,7 +103,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: celestialseeker/house-price-predictor-service:{{ github.sha[:7] }}
+          tags: ${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:{{ github.sha[:7] }}
+          context: .
+          file: "Dockerfile"
           
 
           
