@@ -9,6 +9,7 @@
   packages = with pkgs; [
     (python311.withPackages (ps:
       with ps; [
+        flake8 # Code style checking
         pandas-stubs
         # used by make.py
         typer

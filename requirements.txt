@@ -40,3 +40,8 @@ setuptools==65.5.0
 ipykernel==6.29.5
 
 
+# liniting
+flake8==7.3.0
+
+
+
