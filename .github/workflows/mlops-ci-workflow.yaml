@@ -36,8 +36,8 @@ jobs:
       - name: Data Validation
         run: |
           python src/data/run_processing.py \
-            --output_file data/processed/cleaned_house_data2.csv \
-            --input_file data/raw/house_data.csv
+            --output-file data/processed/cleaned_house_data2.csv \
+            --input-file data/raw/house_data.csv
 
       - name: Feature Engineering
         run: |
