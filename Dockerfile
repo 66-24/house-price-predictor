@@ -21,7 +21,8 @@ WORKDIR /app
 
 COPY src/api/requirements.txt .
 # system to bypass venv
-RUN pip install -r requirements.txt && \
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
     rm -rf /root/.cache/pip /usr/share/doc/* /usr/share/man/*
 
 COPY src/api/ /app
