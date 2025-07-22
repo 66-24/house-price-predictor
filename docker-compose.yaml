@@ -1,0 +1,37 @@
+services:
+  # Notes:
+  # Docker uses .env by default for overrides.
+  # Shell variables override what's in .env
+  # docker compose --env-file .env_dev up
+  # To see the docker compose file after variable substition
+  # docker compose config
+  # The `build` section will cause invalid image names to be built locally.
+  # Invalid image name ${DOCKER_USER_ID}:${SERVICE_VERSION} will be built locally and used!
+  # So for prod use, remove build section from the compose file.
+  # For this reason, probably a good idea to construct the IMAGE URL in .env_xxxx files
+
+  # FastAPI & uvcorn based REST backend service
+  house-price-predictor-service:
+    image: "${SERVICE_IMAGE?Error: SERVICE_IMAGE is not set}:${SERVICE_VERSION?Error: SERVICE_VERSION is not set}"
+    build:
+      # Context is the project root since the service needs files from both src/ and models/
+      # docker cannot see outside its context
+      # dockerfile is relative to context. It's mostly used when the dockerfile name is non-standard
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "8111:8000"
+  # Streamlit based front-end
+  house-price-predictor-ui:
+    image: "${UI_IMAGE?Error: UI_IMAGE is not set}:${UI_VERSION?Error: UI_VERSION is not set}"
+    build:
+      context: ./streamlit_app
+      dockerfile: Dockerfile
+    ports:
+      - "8222:8501"
+    environment:
+      # The UI service uses this URL to talk to the predictor service.
+      # Docker compose creates a virtual network where services can find each other by name.
+      - API_URL=http://house-price-predictor-service:8000
+    depends_on:
+      - house-price-predictor-service

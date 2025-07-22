@@ -29,7 +29,7 @@ house-price-predictor/
 
 ---
 
-## 🛠️ Setting up Learning/Development Environment
+## 🛠️ Setting up a Learning / Development Environment
 
 To begin, ensure the following tools are installed on your system:
 
@@ -68,7 +68,7 @@ To begin, ensure the following tools are installed on your system:
 
 ---
 
-## 📊 Setup MLflow for Experiment Tracking
+## 📊 Set up MLflow for Experiment Tracking
 
 To track experiments and model runs:
 
@@ -133,22 +133,42 @@ python src/models/train_model.py   --config configs/model_config.yaml   --data d
 
 ---
 
-### 🐳 Docker Repository Convention
+### 🐳 Docker Image Naming Convention
 
-To keep our containerized applications organized, this project uses a single Docker Hub repository with a specific tagging convention to differentiate between services.
+To avoid issues with Docker reusing incorrect layers when building images for different services, this project uses unique image names for each service rather than relying solely on tags within a single repository.
 
--   **Single Repository:** All images are pushed to a single repository:
-    `[your-docker-id]/house-price-predictor`
+-   **FastAPI Backend Service:** The Docker image for the FastAPI backend is named:
+    `[your-docker-id]/house-price-predictor-service`
 
--   **Tagging Strategy:** We use tags to identify the service within the repository.
-    -   The FastAPI backend service is tagged with a `service-` prefix (e.g., `service-latest`, `service-v1.0.0`).
-    -   The Streamlit frontend would be tagged with a `ui-` prefix (e.g., `ui-latest`).
+-   **Streamlit Frontend Service:** The Docker image for the Streamlit frontend is named:
+    `[your-docker-id]/house-price-predictor-ui`
 
-This approach avoids the need for multiple repositories and keeps all related project artifacts neatly grouped together.
+This convention ensures that Docker treats each service's image as distinct, preventing build and caching conflicts that can arise when multiple services share the same base image name with only different tags.
+
+### 🛠️ Recovery Steps for Docker Build Issues
+
+If you encounter persistent issues with Docker reusing old layers or unexpected behavior after builds, you can try the following recovery steps:
+
+1.  **Clear Docker Build Cache:**
+    ```bash
+    docker builder prune --all
+    ```
+
+2.  **Comprehensive Docker System Cleanup:** (Use with caution, this removes all unused Docker data)
+    ```bash
+    docker system prune --all --volumes --force
+    ```
+
+3.  **Delete Remote Repositories (if applicable):** If you have pushed images with problematic layers to Docker Hub or another registry, you might need to manually delete the affected repositories from the registry's web interface. To do this on Docker Hub, navigate to each service's repository, then go to **Settings**, and you will find the delete option there. This ensures that `docker compose up` or `docker pull` commands do not fetch the old, problematic images.
 
 ---
 
 ## Building FastAPI and Streamlit
+
+🐉💣 **Important Note on Docker Compose and Image Layers** 💣🐉
+When using `docker compose build` or `docker compose up --build`, Docker Compose might sometimes reuse layers from previously built images if the image names are similar, even if the tags are different. This can lead to unexpected behavior or outdated dependencies in your services.
+
+To mitigate this, we've adopted unique image names for each service (`house-price-predictor-service` and `house-price-predictor-ui`). If you encounter issues with stale layers, consider using `docker compose build --no-cache` or `docker system prune -a` (use with caution as this removes all unused Docker data) to ensure a clean build.
 
 The code for both the apps are available in `src/api` and `streamlit_app` already. To build and launch these apps
 

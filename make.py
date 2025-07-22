@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Utility script to build and push Docker images for the House Price Predictor backend service.
+"""
 import typer
 import subprocess
 from datetime import datetime
@@ -13,7 +17,7 @@ if not docker_userid:
     print("Error: DOCKER_USERID environment variable not set.")
     raise typer.Exit(code=1)
 
-IMAGE_NAME = f"{docker_userid}/house-price-predictor"
+IMAGE_NAME = f"{docker_userid}/house-price-predictor-service"
 VERSION = "1.0.0"
 PORT = 9999
 
@@ -37,7 +41,7 @@ def build(
     author: str = typer.Option(None, help="Author of the image. Defaults to git user.name."),
     push_flag: bool = typer.Option(False, "--push", help="Push the image to the repository after build.")
 ):
-    """Build Docker image with all required ARGS and optionally push to a repository."""
+    """Build a Docker image with all required ARGS and optionally push to a repository."""
     if author is None:
         try:
             author = run("git config --get user.name", capture_output=True)
@@ -61,10 +65,10 @@ def build(
     build_args_str = " ".join([f'--build-arg {k}="{v}"' for k, v in build_args.items()])
 
     tags = [
-        f"{IMAGE_NAME}:service-v{version}",
-        f"{IMAGE_NAME}:service-{git_sha}",
-        f"{IMAGE_NAME}:service-latest",
-        f"{IMAGE_NAME}:service-{team}"
+        f"{IMAGE_NAME}:v{version}",
+        f"{IMAGE_NAME}:{git_sha}",
+        f"{IMAGE_NAME}:latest",
+        f"{IMAGE_NAME}:{team}"
     ]
     tag_args = " ".join([f"-t {t}" for t in tags])
 
