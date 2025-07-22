@@ -24,6 +24,9 @@ docker build \
 #Cleanup dangling images
 docker image prune -f --filter "label=org.opencontainers.image.title=House Price Predictor UI"
 
+# If Docker build behavior is unexpected (e.g., old layers are reused),
+# consider clearing the build cache manually using: `docker builder prune --all`
+
 if [[ "$1" == "--push" ]]; then
   docker push --all-tags ${IMAGE}
 fi

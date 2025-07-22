@@ -42,6 +42,8 @@ def build(
     push_flag: bool = typer.Option(False, "--push", help="Push the image to the repository after build.")
 ):
     """Build a Docker image with all required ARGS and optionally push to a repository."""
+    # If Docker build behavior is unexpected (e.g., old layers are reused),
+    # consider clearing the build cache manually using: `docker builder prune --all`
     if author is None:
         try:
             author = run("git config --get user.name", capture_output=True)
