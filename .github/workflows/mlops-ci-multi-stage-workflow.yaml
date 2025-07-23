@@ -230,9 +230,10 @@ jobs:
 
       - name: Push Docker Image to Docker Hub
         run: |
-          docker tag docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:latest
-          docker push docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:latest
-          docker push docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:{{env.GITHUB_SHA_SHORT}}
+          docker tag \
+            docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:${{env.GITHUB_SHA_SHORT}} \
+            docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:latest
+          docker push --all-tags docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service
           
   image-vulnerability-scan:
     if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_image_vulnerability_scan == 'true' || github.event_name != 'workflow_dispatch' }}
