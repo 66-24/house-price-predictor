@@ -1,6 +1,12 @@
-name: MLOps CI
+name: MLOps CI Multi-Stage Workflow
 
 on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+      - main
   #  workflow_dispatch enable us to run the workflow manually
   workflow_dispatch:
     inputs:
@@ -20,16 +26,19 @@ on:
         description: "Run Build and Publish"
         required: false
         default: "false"
-      release:
-        types: [created]
-        branches: [main]
-        tags: ['v.*.*.*']
+      # Runs on a release event on the main branch with a tag matching the pattern v.*.*.*
+      # Uncomment the following lines to enable the release workflow
+      # release:
+      #   types: [created]
+      #   branches: [main]
+      #   tags: ['v.*.*.*']
 
 
 
 
 jobs:
   data-processing:
+    if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_data_processing == 'true' || github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     # Define MLFlow as a service container. Actions will manage its lifecycle,
     # ensuring it's running and networked before the steps need it.
@@ -86,7 +95,9 @@ jobs:
           path: models/trained/preprocessor.pkl
 
   model-training:
+    if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_model_training == 'true' || github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    needs: data-processing
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -153,6 +164,8 @@ jobs:
           docker rmi ghcr.io/mlflow/mlflow:latest
 
   build_and_publish:
+    if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_build_and_publish == 'true' || github.event_name != 'workflow_dispatch' }}
+    needs: model-training
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
