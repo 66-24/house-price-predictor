@@ -1,12 +1,15 @@
 name: MLOps CI
 
 on:
-  push:
-    branches:
-    - main
-  pull_request:
-    branches:
-      - main
+#  Changing to manual trigger
+  workflow_dispatch: {}
+#
+#  push:
+#    branches:
+#    - main
+#  pull_request:
+#    branches:
+#      - main
 jobs:
   e2e-mlops-workflow:
     runs-on: ubuntu-latest
