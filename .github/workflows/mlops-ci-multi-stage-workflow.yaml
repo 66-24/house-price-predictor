@@ -173,7 +173,7 @@ jobs:
           docker rm mlflow_server
           docker rmi ghcr.io/mlflow/mlflow:latest
 
-  build_and_publish:
+  build-and-publish:
     if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_build_and_publish == 'true' || github.event_name != 'workflow_dispatch' }}
     needs: model-training
     runs-on: ubuntu-latest
@@ -234,7 +234,7 @@ jobs:
           docker push docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:latest
           docker push docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:{{env.GITHUB_SHA_SHORT}}
           
-  Image_Vulnerability_Scan:
+  image-vulnerability-scan:
     if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_image_vulnerability_scan == 'true' || github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     needs: build_and_publish
