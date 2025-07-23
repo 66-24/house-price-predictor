@@ -4,9 +4,13 @@
   # https://devenv.sh/basics/
   env.GREET = "devenv";
 
+  dotenv.enable = true; # Enable dotenv support
+
+
   # https://devenv.sh/packages/
   # Took about 30 mins to build the following setup, quick after that.
   packages = with pkgs; [
+    actionlint # GitHub Actions CLI for local testing
     (python311.withPackages (ps:
       with ps; [
         flake8 # Code style checking
@@ -61,6 +65,19 @@
   # services.postgres.enable = true;
 
   # https://devenv.sh/scripts/
+
+  # Define the actionlint pre-commit script
+  scripts.actionlint-pre-commit.exec = ''
+    echo "Running actionlint pre-commit hook..."
+    # Find all GitHub Actions workflow files and lint them with shellcheck integration
+    find .github/workflows/ -name "*.y*ml" -print0 | xargs -0 actionlint -color -shellcheck
+    if [ $? -ne 0 ]; then
+      echo "actionlint found issues. Please fix them before committing."
+      exit 1
+    fi
+    echo "actionlint passed."
+  '';
+
   scripts.hello.exec = ''
     echo hello from $GREET
   '';
@@ -84,7 +101,13 @@
   '';
 
   # https://devenv.sh/git-hooks/
-  # git-hooks.hooks.shellcheck.enable = true;
+  git-hooks.hooks = {
+    # Enable shellcheck hook (devenv.sh will manage its command)
+    shellcheck.enable = true;
+
+  };
+
+   
 
   # See full reference at https://devenv.sh/reference/options/
 }
