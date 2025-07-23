@@ -201,9 +201,9 @@ jobs:
 
       - name: Build and Test House-Predictor-Service
         run: |
-          docker build -t docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:{{env.GITHUB_SHA_SHORT}} \
+          docker build -t docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:${{env.GITHUB_SHA_SHORT}} \
            -f Dockerfile .
-          docker run -p -d 8000:8000 --name test-service docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:{{env.GITHUB_SHA_SHORT}}
+          docker run -p -d 8000:8000 --name test-service docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:${{env.GITHUB_SHA_SHORT}}
           for i in {1..10} do;
             curl -f http://localhost:8000/health && break || sleep 5
           done
