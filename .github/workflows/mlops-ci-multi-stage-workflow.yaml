@@ -176,6 +176,8 @@ jobs:
   build-and-publish:
     if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_build_and_publish == 'true' || github.event_name != 'workflow_dispatch' }}
     needs: model-training
+    outputs: 
+      image_tag: ${{ steps.set_tag.outputs.full_image_tag }} 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -205,6 +207,11 @@ jobs:
       - name: Setup short GIT SHA
         run:
           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+      
+      - name: Set Docker Image Tag
+        id: set_tag
+        run: |
+          echo "full_image_tag=docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:${{env.GITHUB_SHA_SHORT}}" >> $GITHUB_OUTPUT
 
       - name: Build and Test House-Predictor-Service
         run: |
@@ -234,7 +241,9 @@ jobs:
             docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:${{env.GITHUB_SHA_SHORT}} \
             docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:latest
           docker push --all-tags docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service
-          
+  
+  # Image-tag is passed from one stage to the next
+  # Each stage is a fully isolated environment
   image-vulnerability-scan:
     if: ${{ github.event.inputs.run_all == 'true' || github.event.inputs.run_image_vulnerability_scan == 'true' || github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
@@ -245,7 +254,7 @@ jobs:
           docker pull aquasec/trivy:latest
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy image --exit-code 1 --severity HIGH,CRITICAL docker.io/${{vars.DOCKERHUB_USERNAME}}/house-price-predictor-service:${{env.GITHUB_SHA_SHORT}}
+            aquasec/trivy image --exit-code 1 --severity HIGH,CRITICAL ${{needs.build-and-publish.outputs.image_tag}}
           
           
 
