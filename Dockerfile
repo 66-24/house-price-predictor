@@ -1,5 +1,8 @@
 # Creates the house-price-predictor-service image that wraps the model using FastAPI
 FROM python:3.11-slim
+
+# Update OS packages to address vulnerabilities
+RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 # dataflow/house-price-predictor                   v1                 efcd9bcf0e95   45 years ago         815MB
 # Created shows `45 years ago`;  SOURCE_DATE_EPOCH fixes this
 ARG SOURCE_DATE_EPOCH
