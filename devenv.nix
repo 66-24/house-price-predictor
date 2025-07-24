@@ -82,11 +82,35 @@
     echo hello from $GREET
   '';
 
+  
+  
+  scripts.dagger_build_runner_image.exec = ''
+    echo "Building dagger-runner Docker image..."
+    # Get the Docker group ID from the host
+    DOCKER_GID=$(getent group docker | cut -d: -f3)
+    if [ -z "$DOCKER_GID" ]; then
+      echo "Warning: Could not determine Docker GID on host. Using default 999."
+      DOCKER_GID=999
+    fi
+    docker build -t dagger-runner \
+      --build-arg DOCKER_GID="$DOCKER_GID" \
+      -f Dockerfile.dagger-runner .
+    echo "dagger-runner image built."
+  '';
+
+  scripts.dagger_run_pipeline.exec = ''
+    echo "Executing Dagger pipeline via run_dagger_pipeline.sh..."
+    ./run_dagger_pipeline.sh && \
+    echo "Dagger pipeline execution script finished."
+  '';
+
+  
   enterShell = ''
     for cmd in "python --version" "git --version" "jupyter kernelspec list "; do
       output=$($cmd)
       gum style --foreground 212 --background 57 --bold "$output"
-    done  '';
+    done  
+  '';
 
   # https://devenv.sh/tasks/
   # tasks = {

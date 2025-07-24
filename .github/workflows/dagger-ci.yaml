@@ -1,0 +1,32 @@
+name: Dagger MLOps CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  dagger-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Dagger Runner Image
+        run: docker build -t dagger-runner -f Dockerfile.dagger-runner .
+
+      - name: Run Dagger Pipeline
+        # We use a regular 'run' step here because we're running Docker directly
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD":/src \
+            -w /src \
+            -e DOCKERHUB_USERNAME=${{ vars.DOCKERHUB_USERNAME }} \
+            -e DOCKERHUB_TOKEN=${{ secrets.DOCKERHUB_TOKEN }} \
+            dagger-runner \
+            dagger run python dagger_pipeline.py

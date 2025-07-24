@@ -1,0 +1,103 @@
+# Dockerfile.dagger-runner
+# This image contains the necessary tools to run your Dagger Python pipeline.
+
+FROM python:3.11-slim
+
+# Define a build argument for the Docker GID from the host
+# This will be passed during the 'docker build' command
+ARG DOCKER_GID=999 # Provide a common default, but it should be overridden by host's GID
+
+# Create a non-root user first
+RUN adduser --system --group daggeruser
+
+# Create a 'docker' group inside the container with the host's Docker GID.
+# This is crucial for the non-root user to access the mounted /var/run/docker.sock.
+# '|| true' prevents the build from failing if the group already exists (e.g., if GID 999 is already used).
+RUN groupadd -g ${DOCKER_GID} docker || true && \
+    usermod -aG docker daggeruser # Add daggeruser to the newly created 'docker' group
+
+# Set working directory. This will be owned by root initially,
+# but we'll change ownership later for the non-root user.
+WORKDIR /app
+
+# Install system-wide dependencies as root
+# These are tools that typically reside in /usr/bin or require root privileges to install
+RUN <<EOF
+apt-get update
+apt-get install -y --no-install-recommends \
+    bash-completion \
+    curl \
+    git \
+    gnupg \
+    lsb-release
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+EOF
+
+# Install Docker CLI as root
+RUN <<EOF
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+    | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update
+apt-get install -y docker-ce-cli
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+EOF
+
+# Install Trivy as root (it's a system-level vulnerability scanner)
+RUN <<EOF
+curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb bookworm main" \
+    | tee /etc/apt/sources.list.d/trivy.list > /dev/null
+apt-get update
+apt-get install -y trivy
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+EOF
+
+# Ensure the /app directory (where project will be mounted) is accessible by daggeruser
+# This is important because the host volume will be mounted here.
+# This must be done as root BEFORE switching user
+RUN chown -R daggeruser:daggeruser /app
+
+# Switch to the non-root user for subsequent installations and runtime
+USER daggeruser
+
+# Set the home directory for the non-root user
+ENV HOME=/home/daggeruser
+WORKDIR /home/daggeruser
+
+# Add /usr/bin to the daggeruser's PATH so it can find system binaries like 'docker'
+ENV PATH="/usr/bin:${PATH}"
+
+# Install Dagger CLI for the non-root user
+RUN <<EOF
+curl -L https://dl.dagger.io/dagger/install.sh | sh
+EOF
+
+# Add Dagger CLI to the user's PATH
+ENV PATH="/home/daggeruser/bin:${PATH}"
+
+# Enable Dagger Bash completion for the non-root user
+RUN <<EOF
+mkdir -p /home/daggeruser/.local/share/bash-completion/completions
+dagger completion bash > /home/daggeruser/.local/share/bash-completion/completions/dagger
+EOF
+
+# Install Python dependencies for the Dagger SDK for the non-root user
+RUN <<EOF
+pip install --no-cache-dir --upgrade pip
+pip install --no-cache-dir dagger-io
+rm -rf /home/daggeruser/.cache/pip
+EOF
+
+# Set the working directory back to /app for pipeline execution
+# This is where the host project will be mounted
+WORKDIR /app
+
+# The project directory will be mounted at runtime, so no need to COPY it here.
+
+# Set the default command to run the Dagger pipeline
+# This makes it easy to run the container directly
+CMD ["dagger", "run", "python", "dagger_pipeline.py"]

@@ -137,10 +137,10 @@ python src/models/train_model.py   --config configs/model_config.yaml   --data d
 
 To avoid issues with Docker reusing incorrect layers when building images for different services, this project uses unique image names for each service rather than relying solely on tags within a single repository.
 
--   **FastAPI Backend Service:** The Docker image for the FastAPI backend is named:
+- **FastAPI Backend Service:** The Docker image for the FastAPI backend is named:
     `[your-docker-id]/house-price-predictor-service`
 
--   **Streamlit Frontend Service:** The Docker image for the Streamlit frontend is named:
+- **Streamlit Frontend Service:** The Docker image for the Streamlit frontend is named:
     `[your-docker-id]/house-price-predictor-ui`
 
 This convention ensures that Docker treats each service's image as distinct, preventing build and caching conflicts that can arise when multiple services share the same base image name with only different tags.
@@ -149,17 +149,76 @@ This convention ensures that Docker treats each service's image as distinct, pre
 
 If you encounter persistent issues with Docker reusing old layers or unexpected behavior after builds, you can try the following recovery steps:
 
-1.  **Clear Docker Build Cache:**
+1. **Clear Docker Build Cache:**
+
     ```bash
     docker builder prune --all
     ```
 
-2.  **Comprehensive Docker System Cleanup:** (Use with caution, this removes all unused Docker data)
+2. **Comprehensive Docker System Cleanup:** (Use with caution, this removes all unused Docker data)
+
     ```bash
     docker system prune --all --volumes --force
     ```
 
-3.  **Delete Remote Repositories (if applicable):** If you have pushed images with problematic layers to Docker Hub or another registry, you might need to manually delete the affected repositories from the registry's web interface. To do this on Docker Hub, navigate to each service's repository, then go to **Settings**, and you will find the delete option there. This ensures that `docker compose up` or `docker pull` commands do not fetch the old, problematic images.
+3. **Delete Remote Repositories (if applicable):** If you have pushed images with problematic layers to Docker Hub or another registry, you might need to manually delete the affected repositories from the registry's web interface. To do this on Docker Hub, navigate to each service's repository, then go to **Settings**, and you will find the delete option there. This ensures that `docker compose up` or `docker pull` commands do not fetch the old, problematic images.
+
+---
+
+## Dagger CI Pipeline Setup
+
+The Dagger pipeline runs within a carefully configured, self-contained Docker environment to ensure consistent and secure execution. This is necessary because Dagger is not directly compatible with the Nix-based `devenv` shell. The `devenv` setup is used only as a convenient wrapper for scripts that manage this containerized workflow.
+
+### The `dagger-runner` Environment
+
+All pipeline logic executes inside the `dagger-runner` container, built from `Dockerfile.dagger-runner`. This Dockerfile is specifically crafted to create a secure Docker-in-Docker environment for a non-root user. Here is how it works:
+
+1. **Docker CLI Installation**: The `docker-ce-cli` package is installed by the `root` user from Docker's official repository. This is only the first step and is not sufficient on its own.
+
+2. **Non-Root User and Path**: For security, the container switches to a non-root user named `dockeruser`. After the switch, the container's `PATH` is explicitly updated to include `/usr/bin`, ensuring the `docker` executable is available to this new user.
+
+3. **Docker Socket Permissions (GID Matching)**: The most critical piece is granting the `dockeruser` permission to use the host's Docker socket. This is achieved by matching the group ID (GID):
+    - The `devenv script dagger_build_runner_image` command dynamically gets the GID of the `docker` group from the host machine.
+    - This GID is passed into the `docker build` process as a build argument.
+    - The Dockerfile then creates a `docker` group inside the container with that specific GID and adds `dockeruser` to it.
+
+This GID matching gives the non-root `dockeruser` the exact permissions required to interact with the mounted Docker socket, creating a secure and functional Docker-in-Docker setup.
+
+### Dagger Pipeline Internals
+
+When the pipeline runs, Dagger performs several actions to ensure security and efficiency:
+
+- **Secret Management**: When publishing the Docker image, credentials like `DOCKERHUB_TOKEN` are passed to Dagger as secrets. Dagger ensures these secrets are encrypted before being transmitted to the engine and only makes them available to the specific commands that need them. They are never stored in the final image or logs.
+
+- **Efficient Image Pushing**: Before uploading an image layer, Dagger first sends a `HEAD` request to the container registry (e.g., Docker Hub). This checks if the layer with the same digest already exists. If it does, Dagger skips the upload for that layer, saving significant time and bandwidth.
+
+### Running and Debugging the Pipeline
+
+After entering the development environment with `devenv shell`, the custom scripts defined in `devenv.nix` are directly available as commands.
+
+#### Building and Running
+
+1. **Build the Runner Image**: First, build the `dagger-runner` container image. This only needs to be done once, or whenever you change `Dockerfile.dagger-runner`.
+
+    ```bash
+    dagger_build_runner_image
+    ```
+
+2. **Execute the Pipeline**: Run the entire MLOps pipeline. This command starts the `dagger-runner` container and executes the `dagger_pipeline.py` script inside it. The underlying `run_dagger_pipeline.sh` script is configured to output logs in plain text via the `--progress=plain` flag.
+
+    ```bash
+    dagger_run_pipeline
+    ```
+
+#### Viewing Logs
+
+- **Tailing Runner Logs**: The `run_dagger_pipeline.sh` script runs the container in the foreground, so all output is streamed directly to your terminal. If you were to modify it to run in detached mode (`-d`), you could tail the logs using the container name specified in the script (`dagger-runner`):
+
+    ```bash
+    docker logs -f dagger-runner
+    ```
+
+- **Dagger Engine Tracing**: The `run_dagger_pipeline.sh` script correctly configures the Dagger engine to export OpenTelemetry traces on port `6060`. While traces are generated, we have not yet successfully configured a local Jaeger instance to consume and visualize them. For a reliable and out-of-the-box observability solution, the recommended approach is to use [Dagger Cloud](https://dagger.cloud/).
 
 ---
 
@@ -167,15 +226,16 @@ If you encounter persistent issues with Docker reusing old layers or unexpected 
 
 Here are some important notes regarding the `docker-compose.yaml` configuration:
 
--   **Environment Variable Overrides:** Docker Compose uses `.env` files by default for environment variable overrides. Shell variables will take precedence over those defined in `.env` files.
-    -   To specify a different environment file, use: `docker compose --env-file .env_dev up`
+- **Environment Variable Overrides:** Docker Compose uses `.env` files by default for environment variable overrides. Shell variables will take precedence over those defined in `.env` files.
+  - To specify a different environment file, use: `docker compose --env-file .env_dev up`
 
--   **Viewing Substituted Configuration:** To see the Docker Compose file after all variable substitutions have been applied, you can use:
+- **Viewing Substituted Configuration:** To see the Docker Compose file after all variable substitutions have been applied, you can use:
+
     ```bash
     docker compose config
     ```
 
--   **Build Section in Production:** The `build` section in `docker-compose.yaml` is primarily for local development. It can cause issues with image naming if not handled carefully, as it might build images with invalid names locally (e.g., `${DOCKER_USER_ID}:${SERVICE_VERSION}`). For production deployments, it's generally recommended to remove the `build` section from your compose file and instead use pre-built images from a registry. For this reason, it's a good practice to construct the full image URL (including the registry and repository) directly within your `.env_xxxx` files for different environments.
+- **Build Section in Production:** The `build` section in `docker-compose.yaml` is primarily for local development. It can cause issues with image naming if not handled carefully, as it might build images with invalid names locally (e.g., `${DOCKER_USER_ID}:${SERVICE_VERSION}`). For production deployments, it's generally recommended to remove the `build` section from your compose file and instead use pre-built images from a registry. For this reason, it's a good practice to construct the full image URL (including the registry and repository) directly within your `.env_xxxx` files for different environments.
 
 ---
 

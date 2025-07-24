@@ -1,14 +1,14 @@
 # ---------------------------------------------
 # 📊 DATA PROCESSING & ANALYSIS
 # ---------------------------------------------
-pandas==1.5.3          # Data manipulation and analysis — core for working with tabular data
-numpy==1.24.3          # Numerical operations, arrays, and matrix support (used by almost all ML libraries)
+pandas==2.2.3          # Data manipulation and analysis — core for working with tabular data
+numpy==1.26.2          # Numerical operations, arrays, and matrix support (used by almost all ML libraries)
 
 # ---------------------------------------------
 # 🧠 MACHINE LEARNING
 # ---------------------------------------------
-scikit-learn==1.2.2    # Classic ML models (regression, classification, clustering), preprocessing, model evaluation
-xgboost==2.0.0
+scikit-learn==1.6.1    # Classic ML models (regression, classification, clustering), preprocessing, model evaluation
+xgboost==1.7.6
 # ---------------------------------------------
 # 📈 VISUALIZATION
 # ---------------------------------------------
@@ -28,8 +28,8 @@ pytest==7.3.1          # Python testing framework — great for writing unit tes
 # ---------------------------------------------
 # ⚡ API DEVELOPMENT (FOR MODEL SERVING)
 # ---------------------------------------------
-fastapi==0.95.2        # Lightweight, high-performance web framework for serving ML models via REST APIs
-uvicorn==0.22.0        # ASGI server for running FastAPI apps — lightweight and fast
+fastapi==0.115.12        # Lightweight, high-performance web framework for serving ML models via REST APIs
+uvicorn==0.34.0        # ASGI server for running FastAPI apps — lightweight and fast
 #
 # ---------------------------------------------
 #  MISC
